@@ -187,7 +187,7 @@ function App() {
       <header className="app-header">
         <div className="logo-container">
           <div className="logo-text">
-            <h1>The Library of Parliament</h1>
+            <h1>Library of Parliament</h1>
             <p>Parliament of Sri Lanka</p>
           </div>
         </div>
