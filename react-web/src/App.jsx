@@ -192,14 +192,14 @@ function App() {
             <p>Parliament of Sri Lanka</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+        <div className="header-actions">
+          <button className="btn-primary add-book-btn" onClick={() => setIsModalOpen(true)}>
             <Plus size={20} />
-            Add Book
+            <span className="add-book-text">Add Book</span>
           </button>
-          <button className="btn-secondary" onClick={handleSignOut} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none' }}>
+          <button className="btn-secondary sign-out-btn" onClick={handleSignOut}>
             <LogOut size={18} />
-            Sign Out
+            <span className="sign-out-text">Sign Out</span>
           </button>
         </div>
       </header>
