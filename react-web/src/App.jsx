@@ -1,15 +1,98 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
-import { Search, Plus, User, Layers, Hash, BookOpen, X } from 'lucide-react';
+import { Search, Plus, User, Layers, Hash, BookOpen, X, LogOut } from 'lucide-react';
 import './index.css';
 
+// --- AUTHENTICATION COMPONENT ---
+function Auth() {
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setSuccessMsg('Sign up successful! You can now log in.');
+        setIsLogin(true);
+      }
+    } catch (error) {
+      setErrorMsg(error.error_description || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-wrapper">
+      <div className="auth-card">
+        <img src="/logo.png" alt="Library Logo" className="auth-logo" />
+        <h2>The Library of Parliament</h2>
+        <p>Restricted access. Please sign in.</p>
+
+        {errorMsg && <div className="auth-error">{errorMsg}</div>}
+        {successMsg && <div className="auth-message">{successMsg}</div>}
+
+        <form className="auth-form" onSubmit={handleAuth}>
+          <div className="form-group">
+            <label>Email Address</label>
+            <input
+              type="email"
+              className="form-control"
+              placeholder="librarian@parliament.lk"
+              value={email}
+              required
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              className="form-control"
+              placeholder="••••••••"
+              value={password}
+              required
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <button className="btn-primary" type="submit" disabled={loading}>
+            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+          </button>
+        </form>
+
+        <button 
+          className="auth-toggle" 
+          onClick={() => { setIsLogin(!isLogin); setErrorMsg(''); setSuccessMsg(''); }}
+        >
+          {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// --- MAIN APP COMPONENT ---
 function App() {
+  const [session, setSession] = useState(null);
+  
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Modal Form State
   const [formData, setFormData] = useState({
     Title: '',
     Author: '',
@@ -17,7 +100,24 @@ function App() {
     ISBN: '',
   });
 
+  // Auth Effect
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const fetchBooks = useCallback(async (query = '') => {
+    if (!session) return;
+    
     if (query.trim() === '') {
       setBooks([]);
       setLoading(false);
@@ -40,21 +140,20 @@ function App() {
       setBooks(data || []);
     }
     setLoading(false);
-  }, []);
+  }, [session]);
 
   // Debounced search
   useEffect(() => {
     const timerId = setTimeout(() => {
-      fetchBooks(searchQuery);
+      if (session) fetchBooks(searchQuery);
     }, 500);
 
     return () => clearTimeout(timerId);
-  }, [searchQuery, fetchBooks]);
+  }, [searchQuery, fetchBooks, session]);
 
   const handleAddBook = async (e) => {
     e.preventDefault();
     
-    // Convert Edition to a number since it is a smallint in Supabase
     const newBook = {
       ...formData,
       Edition: parseInt(formData.Edition, 10) || null
@@ -68,10 +167,21 @@ function App() {
     } else {
       setIsModalOpen(false);
       setFormData({ Title: '', Author: '', Edition: '', ISBN: '' });
-      fetchBooks(searchQuery); // refresh list
+      fetchBooks(searchQuery);
     }
   };
 
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('Error signing out:', error.message);
+  };
+
+  // Render Auth if not logged in
+  if (!session) {
+    return <Auth />;
+  }
+
+  // Render App if logged in
   return (
     <>
       <header className="app-header">
@@ -82,10 +192,16 @@ function App() {
             <p>Parliament of Sri Lanka</p>
           </div>
         </div>
-        <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
-          <Plus size={20} />
-          Add Book
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+            <Plus size={20} />
+            Add Book
+          </button>
+          <button className="btn-secondary" onClick={handleSignOut} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none' }}>
+            <LogOut size={18} />
+            Sign Out
+          </button>
+        </div>
       </header>
 
       <main className="main-content">
