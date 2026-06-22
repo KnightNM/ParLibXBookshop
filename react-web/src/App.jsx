@@ -38,8 +38,8 @@ function Auth() {
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
-        <img src="/logo.png" alt="Library Logo" className="auth-logo" />
-        <h2>The Library of Parliament</h2>
+        <img src="/login-logo.png" alt="Parliament of Sri Lanka Logo" className="auth-logo-wide" />
+        <h2>Library of Parliament</h2>
         <p>Restricted access. Please sign in.</p>
 
         {errorMsg && <div className="auth-error">{errorMsg}</div>}

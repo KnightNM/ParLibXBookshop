@@ -340,6 +340,14 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.auth-logo-wide {
+  width: 100%;
+  max-width: 250px;
+  height: auto;
+  margin-bottom: 1rem;
+  object-fit: contain;
+}
+
 .auth-card h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
