@@ -186,7 +186,6 @@ function App() {
     <>
       <header className="app-header">
         <div className="logo-container">
-          <img src="/logo.png" alt="Library Logo" className="logo-image" />
           <div className="logo-text">
             <h1>The Library of Parliament</h1>
             <p>Parliament of Sri Lanka</p>
