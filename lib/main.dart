@@ -582,10 +582,10 @@ class _BookCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Read values from the map, defaulting to '—' if null.
-    final String title = (book['Title'] ?? '—').toString();
-    final String author = (book['Author'] ?? '—').toString();
-    final String edition = (book['Edition'] ?? '—').toString();
-    final String isbn = (book['ISBN'] ?? '—').toString();
+    final String title = book['Title']?.toString() ?? '—';
+    final String author = book['Author']?.toString() ?? '—';
+    final String edition = book['Edition']?.toString() ?? '—';
+    final String isbn = book['ISBN']?.toString() ?? '—';
 
     return Card(
       elevation: 1,
