@@ -91,6 +91,7 @@ function App() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFilter, setSearchFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -115,41 +116,48 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchBooks = useCallback(async (query = '') => {
+  // Debounced search with abort guard
+  useEffect(() => {
     if (!session) return;
-    
-    if (query.trim() === '') {
+
+    // If search is empty, clear immediately
+    if (searchQuery.trim() === '') {
       setBooks([]);
       setLoading(false);
       return;
     }
 
+    let cancelled = false;
     setLoading(true);
-    let req = supabase.from('Books').select();
 
-    const pattern = `%${query.trim()}%`;
-    req = req.or(`Title.ilike.${pattern},Author.ilike.${pattern},ISBN.ilike.${pattern}`);
+    const timerId = setTimeout(async () => {
+      const pattern = `%${searchQuery.trim()}%`;
+      let query = supabase.from('Books').select();
 
-    req = req.order('Title', { ascending: true });
+      if (searchFilter === 'All') {
+        query = query.or(`Title.ilike.${pattern},Author.ilike.${pattern},ISBN.ilike.${pattern}`);
+      } else {
+        query = query.ilike(searchFilter, pattern);
+      }
 
-    const { data, error } = await req;
-    
-    if (error) {
-      console.error('Error fetching books:', error);
-    } else {
-      setBooks(data || []);
-    }
-    setLoading(false);
-  }, [session]);
+      const { data, error } = await query.order('Title', { ascending: true });
 
-  // Debounced search
-  useEffect(() => {
-    const timerId = setTimeout(() => {
-      if (session) fetchBooks(searchQuery);
+      // Only update state if this request wasn't cancelled
+      if (!cancelled) {
+        if (error) {
+          console.error('Error fetching books:', error);
+        } else {
+          setBooks(data || []);
+        }
+        setLoading(false);
+      }
     }, 500);
 
-    return () => clearTimeout(timerId);
-  }, [searchQuery, fetchBooks, session]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timerId);
+    };
+  }, [searchQuery, searchFilter, session]);
 
   const handleAddBook = async (e) => {
     e.preventDefault();
@@ -167,7 +175,9 @@ function App() {
     } else {
       setIsModalOpen(false);
       setFormData({ Title: '', Author: '', Edition: '', ISBN: '' });
-      fetchBooks(searchQuery);
+      // Trigger a re-fetch by bumping the search query
+      setSearchQuery(prev => prev + ' ');
+      setTimeout(() => setSearchQuery(searchQuery), 0);
     }
   };
 
@@ -204,28 +214,41 @@ function App() {
       </header>
 
       <main className="main-content">
-        <div className="search-container">
-          <Search className="search-icon" size={20} />
-          <input 
-            type="text" 
-            className="search-input" 
-            placeholder="Search by title, author, or ISBN..." 
-            value={searchQuery}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSearchQuery(val);
-              if (val.trim() === '') setBooks([]);
-            }}
-          />
-          {searchQuery && (
-            <button
-              className="search-clear-btn"
-              onClick={() => { setSearchQuery(''); setBooks([]); }}
-              aria-label="Clear search"
-            >
-              <X size={18} />
-            </button>
-          )}
+        <div className="search-row">
+          <select
+            className="search-filter"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+          >
+            <option value="All">All</option>
+            <option value="Title">Title</option>
+            <option value="Author">Author</option>
+            <option value="ISBN">ISBN</option>
+          </select>
+          <div className="search-container">
+            <Search className="search-icon" size={20} />
+            <input 
+              type="search" 
+              className="search-input" 
+              placeholder={searchFilter === 'All' ? 'Search by title, author, or ISBN...' : `Search by ${searchFilter.toLowerCase()}...`}
+              value={searchQuery}
+              autoComplete="one-time-code"
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchQuery(val);
+                if (val.trim() === '') setBooks([]);
+              }}
+            />
+            {searchQuery && (
+              <button
+                className="search-clear-btn"
+                onClick={() => window.location.reload()}
+                aria-label="Clear search"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         {searchQuery.trim() === '' ? (
@@ -247,8 +270,8 @@ function App() {
           </div>
         ) : (
           <div className="book-grid">
-            {books.map((book) => (
-              <div key={book.id || book.ISBN || Math.random()} className="book-card">
+            {books.map((book, index) => (
+              <div key={book.id || `${book.ISBN}-${index}`} className="book-card">
                 <h3 className="book-title">{book.Title || '—'}</h3>
                 
                 <div className="book-detail">
