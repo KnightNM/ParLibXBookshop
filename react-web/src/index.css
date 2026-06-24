@@ -83,7 +83,7 @@ body {
 
 .search-input {
   width: 100%;
-  padding: 1rem 1rem 1rem 3rem;
+  padding: 1rem 3rem 1rem 3rem;
   font-size: 1.1rem;
   font-family: inherit;
   border: 1px solid var(--border-color);
@@ -105,6 +105,28 @@ body {
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.search-clear-btn:hover {
+  background-color: var(--border-color);
+  color: var(--text-main);
 }
 
 /* Book Grid */

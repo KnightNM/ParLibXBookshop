@@ -211,8 +211,21 @@ function App() {
             className="search-input" 
             placeholder="Search by title, author, or ISBN..." 
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchQuery(val);
+              if (val.trim() === '') setBooks([]);
+            }}
           />
+          {searchQuery && (
+            <button
+              className="search-clear-btn"
+              onClick={() => { setSearchQuery(''); setBooks([]); }}
+              aria-label="Clear search"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
         {searchQuery.trim() === '' ? (
